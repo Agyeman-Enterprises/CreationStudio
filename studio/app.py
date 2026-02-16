@@ -1,13 +1,13 @@
 """
 Creation Studio - Unified AI Creation Suite
-A Leonardo.ai-style app for image, music, and video generation.
+A Leonardo.ai-style app for image, music, video, and voice generation.
 """
 
 import gradio as gr
 import os
 
 # Import modules
-from . import image_gen, image_tools, logo_export, audio_lab, video_gen, gallery
+from . import image_gen, image_tools, logo_export, audio_lab, video_gen, voice_gen, gallery
 
 CUSTOM_CSS = """
 /* Dark theme overrides */
@@ -21,8 +21,16 @@ CUSTOM_CSS = """
     --color-accent: #7c3aed !important;
     --color-accent-soft: #7c3aed33 !important;
     --body-text-color: #e0e0e8 !important;
-    --body-text-color-subdued: #8888aa !important;
+    --body-text-color-subdued: #b0b0c8 !important;
     --input-background-fill: #1e1e2e !important;
+    --button-primary-text-color: #ffffff !important;
+    --button-secondary-text-color: #e0e0e8 !important;
+    --checkbox-label-text-color: #e0e0e8 !important;
+}
+
+/* Force all text white/light on dark backgrounds */
+.gradio-container, .gradio-container * {
+    color: #e0e0e8;
 }
 
 .gradio-container {
@@ -47,7 +55,7 @@ CUSTOM_CSS = """
     margin: 0 !important;
 }
 .studio-header p {
-    color: #8888aa !important;
+    color: #b0b0c8 !important;
     font-size: 1.1em !important;
 }
 
@@ -60,7 +68,7 @@ CUSTOM_CSS = """
 }
 .tabs > .tab-nav > button {
     background: transparent !important;
-    color: #8888aa !important;
+    color: #b0b0c8 !important;
     border: none !important;
     border-radius: 8px !important;
     padding: 12px 24px !important;
@@ -70,7 +78,7 @@ CUSTOM_CSS = """
 }
 .tabs > .tab-nav > button.selected {
     background: linear-gradient(135deg, #7c3aed, #2563eb) !important;
-    color: white !important;
+    color: #ffffff !important;
 }
 .tabs > .tab-nav > button:hover:not(.selected) {
     background: #1e1e2e !important;
@@ -78,7 +86,7 @@ CUSTOM_CSS = """
 }
 
 /* Buttons */
-.primary {
+.primary, button.primary {
     background: linear-gradient(135deg, #7c3aed, #2563eb) !important;
     border: none !important;
     font-weight: 700 !important;
@@ -87,15 +95,17 @@ CUSTOM_CSS = """
     border-radius: 10px !important;
     transition: all 0.3s !important;
     box-shadow: 0 4px 15px #7c3aed44 !important;
+    color: #ffffff !important;
 }
-.primary:hover {
+.primary:hover, button.primary:hover {
     box-shadow: 0 6px 25px #7c3aed66 !important;
     transform: translateY(-1px) !important;
+    color: #ffffff !important;
 }
-.secondary {
+.secondary, button.secondary {
     background: #1e1e2e !important;
     border: 1px solid #7c3aed44 !important;
-    color: #c0c0d0 !important;
+    color: #e0e0e8 !important;
     border-radius: 8px !important;
 }
 
@@ -111,10 +121,29 @@ textarea:focus, input:focus {
     border-color: #7c3aed !important;
     box-shadow: 0 0 10px #7c3aed33 !important;
 }
+textarea::placeholder, input::placeholder {
+    color: #6a6a8a !important;
+}
+
+/* Dropdowns */
+select, .wrap option, [data-testid="dropdown"] {
+    background: #1e1e2e !important;
+    color: #e0e0e8 !important;
+}
+
+/* Radio / Checkbox labels */
+.wrap label span, .radio-group label, .checkbox-group label,
+input[type="radio"] + label, input[type="checkbox"] + label,
+.gr-radio label, .gr-checkbox label {
+    color: #e0e0e8 !important;
+}
 
 /* Sliders */
 input[type="range"] {
     accent-color: #7c3aed !important;
+}
+.range-slider .label, .range-slider span {
+    color: #e0e0e8 !important;
 }
 
 /* Cards / blocks */
@@ -140,6 +169,37 @@ input[type="range"] {
     border-color: #7c3aed !important;
 }
 
+/* Markdown text */
+.prose, .prose *, .markdown-text, .markdown-text * {
+    color: #e0e0e8 !important;
+}
+.prose h1, .prose h2, .prose h3, .prose h4 {
+    color: #ffffff !important;
+}
+
+/* Dataframe / table */
+table, th, td {
+    color: #e0e0e8 !important;
+    border-color: #2a2a3e !important;
+}
+th {
+    background: #1a1a2e !important;
+    color: #c0c0d8 !important;
+}
+td {
+    background: #16161f !important;
+}
+
+/* File upload / download */
+.file-preview, .upload-text {
+    color: #e0e0e8 !important;
+}
+
+/* Info text */
+.info-text, .gr-form .info, span.info {
+    color: #9898b8 !important;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: #0a0a0f; }
@@ -147,22 +207,85 @@ input[type="range"] {
 ::-webkit-scrollbar-thumb:hover { background: #7c3aed; }
 
 /* Labels */
-label { font-size: 14px !important; font-weight: 600 !important; color: #c0c0d0 !important; }
+label, label span {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #c0c0d8 !important;
+}
+
+/* Dropdown fix - force dark bg on all dropdown internals */
+.gradio-dropdown .wrap,
+.gradio-dropdown .wrap-inner,
+.gradio-dropdown .secondary-wrap,
+.gradio-dropdown .single-select,
+.gradio-dropdown input,
+.gradio-dropdown .options,
+.gradio-dropdown ul,
+.gradio-dropdown li,
+.gradio-dropdown .token,
+[data-testid="dropdown"],
+[data-testid="dropdown"] .wrap,
+[data-testid="dropdown"] input,
+[data-testid="dropdown"] .single-select,
+.svelte-dropdown,
+div[role="listbox"],
+div[role="option"] {
+    background: #1e1e2e !important;
+    background-color: #1e1e2e !important;
+    color: #e0e0e8 !important;
+}
+.gradio-dropdown ul.options,
+div[role="listbox"] {
+    background: #16161f !important;
+    border: 1px solid #2a2a3e !important;
+}
+.gradio-dropdown ul.options li:hover,
+.gradio-dropdown ul.options li.active,
+.gradio-dropdown ul.options li.selected,
+div[role="option"]:hover,
+div[role="option"][aria-selected="true"] {
+    background: #7c3aed !important;
+    color: #ffffff !important;
+}
+
+/* Force all buttons to have visible text */
+button {
+    color: #e0e0e8 !important;
+}
+button.primary, .primary button {
+    color: #ffffff !important;
+}
+"""
+
+PWA_HEAD = """
+<meta name="theme-color" content="#7c3aed">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Creation Studio">
+<link rel="apple-touch-icon" href="/pwa/icon-192.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(r => console.log('[PWA] Service worker registered, scope:', r.scope))
+      .catch(e => console.warn('[PWA] SW registration failed:', e));
+  });
+}
+</script>
 """
 
 
 def build_app():
     with gr.Blocks(
         title="Creation Studio",
-        css=CUSTOM_CSS,
-        theme=gr.themes.Base(),
     ) as app:
 
         # Header
         gr.HTML("""
         <div class="studio-header">
             <h1>Creation Studio</h1>
-            <p>AI-Powered Image, Music & Video Generation</p>
+            <p>AI-Powered Image, Music, Video & Voice Generation</p>
         </div>
         """)
 
@@ -431,56 +554,151 @@ def build_app():
                             outputs=[chain_output, chain_file],
                         )
 
-            # ============ VIDEO GEN TAB ============
-            with gr.Tab("Video Gen", id="videogen"):
+            # ============ VOICE GEN TAB ============
+            with gr.Tab("Voice Gen", id="voicegen"):
+                gr.Markdown("### AI Voice Generation\nGenerate voiceovers, narration, and character voices. Powered by Parler TTS.")
                 with gr.Row():
                     with gr.Column(scale=1):
-                        vid_prompt = gr.Textbox(
-                            label="Describe your video",
-                            lines=2,
-                            placeholder="A golden retriever running on a beach at sunset",
+                        vox_text = gr.Textbox(
+                            label="Text to speak",
+                            lines=6,
+                            placeholder="Welcome to Creation Studio. This is your all-in-one creative suite for images, music, video, and voice.",
                         )
-                        vid_frames = gr.Slider(8, 48, 16, step=8, label="Frames (more = longer video)")
-                        vid_guidance = gr.Slider(1, 15, 6, step=0.5, label="Guidance Scale")
-                        vid_fps = gr.Dropdown(
-                            choices=["8", "15", "24", "30"],
-                            value="8",
-                            label="FPS",
+                        vox_voice = gr.Dropdown(
+                            choices=voice_gen.get_voice_names(),
+                            value=voice_gen.get_voice_names()[0],
+                            label="Voice Preset",
                         )
-                        vid_preset = gr.Dropdown(
-                            choices=list(video_gen.SOCIAL_PRESETS.keys()),
-                            value="YouTube / Twitter (16:9)",
-                            label="Social Media Preset",
+                        vox_format = gr.Radio(
+                            choices=["WAV", "MP3", "OGG"],
+                            value="WAV",
+                            label="Export Format",
                         )
-                        with gr.Row(visible=False) as vid_custom_row:
-                            vid_custom_w = gr.Number(label="Custom Width", value=1920)
-                            vid_custom_h = gr.Number(label="Custom Height", value=1080)
-                        vid_format = gr.Dropdown(
-                            choices=["MP4", "GIF", "WebM"],
-                            value="MP4",
-                            label="Output Format",
-                        )
-                        vid_gen_btn = gr.Button("Generate", variant="primary", size="lg")
+                        vox_gen_btn = gr.Button("Generate Voice", variant="primary", size="lg")
 
                     with gr.Column(scale=1):
-                        vid_output = gr.Video(label="Generated Video")
-                        vid_file = gr.File(label="Download")
+                        vox_output = gr.Audio(label="Generated Voice")
+                        vox_file = gr.File(label="Download")
 
-                # Show/hide custom dimensions
-                def toggle_custom(preset):
-                    return gr.update(visible=(preset == "Custom"))
+                def _generate_voice(text, voice_name, fmt):
+                    audio_tuple, path = voice_gen.generate_voice(text, voice_name, fmt)
+                    return audio_tuple, path
 
-                vid_preset.change(fn=toggle_custom, inputs=[vid_preset], outputs=[vid_custom_row])
-
-                def _gen_video(prompt, frames, guidance, fps, preset, fmt, cw, ch):
-                    path = video_gen.generate_video(prompt, frames, guidance, int(fps), preset, fmt.lower(), cw, ch)
-                    return path, path
-
-                vid_gen_btn.click(
-                    fn=_gen_video,
-                    inputs=[vid_prompt, vid_frames, vid_guidance, vid_fps, vid_preset, vid_format, vid_custom_w, vid_custom_h],
-                    outputs=[vid_output, vid_file],
+                vox_gen_btn.click(
+                    fn=_generate_voice,
+                    inputs=[vox_text, vox_voice, vox_format],
+                    outputs=[vox_output, vox_file],
                 )
+
+            # ============ VIDEO GEN TAB ============
+            with gr.Tab("Video Gen", id="videogen"):
+                with gr.Tabs():
+
+                    # Single clip
+                    with gr.Tab("Single Clip"):
+                        with gr.Row():
+                            with gr.Column(scale=1):
+                                vid_prompt = gr.Textbox(
+                                    label="Describe your video",
+                                    lines=2,
+                                    placeholder="A golden retriever running on a beach at sunset, cinematic lighting",
+                                )
+                                vid_frames = gr.Slider(16, 81, 33, step=8, label="Frames (more = longer clip)")
+                                vid_guidance = gr.Slider(1, 15, 5, step=0.5, label="Guidance Scale")
+                                vid_fps = gr.Dropdown(
+                                    choices=["8", "15", "24", "30"],
+                                    value="15",
+                                    label="FPS",
+                                )
+                                vid_preset = gr.Dropdown(
+                                    choices=list(video_gen.SOCIAL_PRESETS.keys()),
+                                    value="YouTube / Twitter (16:9)",
+                                    label="Social Media Preset",
+                                )
+                                with gr.Row(visible=False) as vid_custom_row:
+                                    vid_custom_w = gr.Number(label="Custom Width", value=1920)
+                                    vid_custom_h = gr.Number(label="Custom Height", value=1080)
+                                vid_format = gr.Dropdown(
+                                    choices=["MP4", "GIF", "WebM"],
+                                    value="MP4",
+                                    label="Output Format",
+                                )
+                                vid_gen_btn = gr.Button("Generate", variant="primary", size="lg")
+
+                            with gr.Column(scale=1):
+                                vid_output = gr.Video(label="Generated Video")
+                                vid_file = gr.File(label="Download")
+
+                        # Show/hide custom dimensions
+                        def toggle_custom(preset):
+                            return gr.update(visible=(preset == "Custom"))
+
+                        vid_preset.change(fn=toggle_custom, inputs=[vid_preset], outputs=[vid_custom_row])
+
+                        def _gen_video(prompt, frames, guidance, fps, preset, fmt, cw, ch):
+                            path = video_gen.generate_video(prompt, frames, guidance, int(fps), preset, fmt.lower(), cw, ch)
+                            return path, path
+
+                        vid_gen_btn.click(
+                            fn=_gen_video,
+                            inputs=[vid_prompt, vid_frames, vid_guidance, vid_fps, vid_preset, vid_format, vid_custom_w, vid_custom_h],
+                            outputs=[vid_output, vid_file],
+                        )
+
+                    # Video Chain
+                    with gr.Tab("Video Chain"):
+                        gr.Markdown("### Multi-Clip Video\nGenerate multiple clips from separate prompts and stitch them into one video.\nPut each scene description on a new line.")
+                        with gr.Row():
+                            with gr.Column(scale=1):
+                                vchain_prompts = gr.Textbox(
+                                    label="Scene prompts (one per line)",
+                                    lines=8,
+                                    placeholder="Wide establishing shot of a futuristic city at dawn, aerial view\nClose-up of a woman walking through neon-lit streets, cinematic\nSlow motion shot of rain falling on glass windows, reflections\nDrone shot pulling away from the city skyline at sunset",
+                                )
+                                vchain_frames = gr.Slider(16, 81, 33, step=8, label="Frames per clip")
+                                vchain_guidance = gr.Slider(1, 15, 5, step=0.5, label="Guidance Scale")
+                                vchain_fps = gr.Dropdown(
+                                    choices=["8", "15", "24", "30"],
+                                    value="15",
+                                    label="FPS",
+                                )
+                                vchain_crossfade = gr.Slider(0, 30, 8, step=1, label="Crossfade (frames)")
+                                vchain_preset = gr.Dropdown(
+                                    choices=list(video_gen.SOCIAL_PRESETS.keys()),
+                                    value="YouTube / Twitter (16:9)",
+                                    label="Social Media Preset",
+                                )
+                                with gr.Row(visible=False) as vchain_custom_row:
+                                    vchain_custom_w = gr.Number(label="Custom Width", value=1920)
+                                    vchain_custom_h = gr.Number(label="Custom Height", value=1080)
+                                vchain_format = gr.Dropdown(
+                                    choices=["MP4", "GIF", "WebM"],
+                                    value="MP4",
+                                    label="Output Format",
+                                )
+                                vchain_btn = gr.Button("Generate Video Chain", variant="primary", size="lg")
+
+                            with gr.Column(scale=1):
+                                vchain_output = gr.Video(label="Stitched Video")
+                                vchain_file = gr.File(label="Download")
+
+                        vchain_preset.change(
+                            fn=toggle_custom,
+                            inputs=[vchain_preset],
+                            outputs=[vchain_custom_row],
+                        )
+
+                        def _gen_video_chain(prompts, frames, guidance, fps, preset, fmt, crossfade, cw, ch):
+                            path = video_gen.generate_video_chain(
+                                prompts, frames, guidance, int(fps), preset, fmt.lower(), crossfade, cw, ch
+                            )
+                            return path, path
+
+                        vchain_btn.click(
+                            fn=_gen_video_chain,
+                            inputs=[vchain_prompts, vchain_frames, vchain_guidance, vchain_fps, vchain_preset, vchain_format, vchain_crossfade, vchain_custom_w, vchain_custom_h],
+                            outputs=[vchain_output, vchain_file],
+                        )
 
             # ============ GALLERY TAB ============
             with gr.Tab("Gallery", id="gallery"):
@@ -535,8 +753,64 @@ def build_app():
 
 
 def launch():
-    app = build_app()
-    app.launch(server_name="0.0.0.0", server_port=7860)
+    import os
+    import socket
+    import uvicorn
+    from fastapi import FastAPI
+    from fastapi.staticfiles import StaticFiles
+
+    outputs_dir = os.path.expanduser("~/CreationStudio/outputs")
+    models_dir = os.path.expanduser("~/CreationStudio/ComfyUI/models")
+    studio_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    pwa_dir = os.path.join(studio_root, "pwa")
+    icon_path = os.path.join(pwa_dir, "icon-512.png")
+
+    gradio_app = build_app()
+
+    # FastAPI wrapper: serves PWA static files + Gradio app
+    from fastapi.responses import FileResponse
+
+    fastapi_app = FastAPI()
+    fastapi_app.mount("/pwa", StaticFiles(directory=pwa_dir), name="pwa")
+
+    @fastapi_app.get("/sw.js")
+    async def service_worker():
+        return FileResponse(
+            os.path.join(pwa_dir, "sw.js"),
+            media_type="application/javascript",
+        )
+
+    gr.mount_gradio_app(
+        fastapi_app,
+        gradio_app,
+        path="/",
+        pwa=True,
+        favicon_path=icon_path,
+        allowed_paths=[outputs_dir, models_dir],
+        css=CUSTOM_CSS,
+        theme=gr.themes.Base(),
+        head=PWA_HEAD,
+    )
+
+    # Print launch info
+    local_ip = "127.0.0.1"
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+    except Exception:
+        pass
+
+    print(f"\n  {'='*50}")
+    print(f"  Creation Studio")
+    print(f"  {'='*50}")
+    print(f"  Local:   http://127.0.0.1:7860")
+    print(f"  Network: http://{local_ip}:7860")
+    print(f"  PWA:     Install via browser menu on any device")
+    print(f"  {'='*50}\n")
+
+    uvicorn.run(fastapi_app, host="0.0.0.0", port=7860)
 
 
 if __name__ == "__main__":
