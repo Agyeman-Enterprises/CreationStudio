@@ -1,0 +1,37 @@
+# Virtual environments
+*-venv/
+studio-venv/
+imagegen-venv/
+musicgen-venv/
+videogen-venv/
+
+# ComfyUI (huge, separate install)
+ComfyUI/
+
+# Model files (too large for git)
+*.safetensors
+*.ckpt
+*.bin
+*.pt
+*.pth
+
+# Outputs (generated content)
+outputs/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.eggs/
+*.egg-info/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Mochi / old venvs
+mochi/
+
+# Temp files
+*.tmp
+/tmp/
