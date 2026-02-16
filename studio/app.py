@@ -10,22 +10,55 @@ import os
 from . import image_gen, image_tools, logo_export, audio_lab, video_gen, voice_gen, gallery
 
 CUSTOM_CSS = """
-/* Dark theme overrides */
-:root {
+/* Dark theme overrides — set on root, body, AND .gradio-container to beat Base theme */
+:root, body, .gradio-container, .main, .app {
     --body-background-fill: #0a0a0f !important;
     --background-fill-primary: #12121a !important;
     --background-fill-secondary: #1a1a2e !important;
     --block-background-fill: #16161f !important;
     --block-border-color: #2a2a3e !important;
     --border-color-primary: #2a2a3e !important;
+    --border-color-accent: #7c3aed !important;
     --color-accent: #7c3aed !important;
     --color-accent-soft: #7c3aed33 !important;
     --body-text-color: #e0e0e8 !important;
     --body-text-color-subdued: #b0b0c8 !important;
     --input-background-fill: #1e1e2e !important;
+    --input-background-fill-focus: #1e1e2e !important;
+    --input-background-fill-hover: #252538 !important;
+    --input-border-color: #2a2a3e !important;
+    --input-border-color-focus: #7c3aed !important;
+    --input-text-color: #e0e0e8 !important;
+    --input-placeholder-color: #6a6a8a !important;
+    --button-primary-background-fill: linear-gradient(135deg, #7c3aed, #2563eb) !important;
+    --button-primary-background-fill-hover: linear-gradient(135deg, #8b4dfd, #3573fb) !important;
     --button-primary-text-color: #ffffff !important;
+    --button-primary-border-color: transparent !important;
+    --button-secondary-background-fill: #1e1e2e !important;
+    --button-secondary-background-fill-hover: #2a2a40 !important;
     --button-secondary-text-color: #e0e0e8 !important;
+    --button-secondary-border-color: #7c3aed44 !important;
+    --button-cancel-background-fill: #1e1e2e !important;
+    --button-cancel-text-color: #e0e0e8 !important;
+    --checkbox-background-color: #1e1e2e !important;
     --checkbox-label-text-color: #e0e0e8 !important;
+    --checkbox-label-background-fill: #1e1e2e !important;
+    --shadow-drop: none !important;
+    --shadow-drop-lg: 0 4px 12px rgba(0,0,0,0.4) !important;
+    --table-odd-background-fill: #16161f !important;
+    --table-even-background-fill: #12121a !important;
+    --panel-background-fill: #12121a !important;
+    --neutral-50: #1a1a2e !important;
+    --neutral-100: #1e1e2e !important;
+    --neutral-200: #2a2a3e !important;
+    --neutral-300: #3a3a50 !important;
+    --neutral-400: #6a6a8a !important;
+    --neutral-500: #8a8aa8 !important;
+    --neutral-600: #b0b0c8 !important;
+    --neutral-700: #c0c0d8 !important;
+    --neutral-800: #d0d0e0 !important;
+    --neutral-900: #e0e0e8 !important;
+    --neutral-950: #f0f0f8 !important;
 }
 
 /* Force all text white/light on dark backgrounds */
@@ -85,8 +118,13 @@ CUSTOM_CSS = """
     color: #e0e0e8 !important;
 }
 
-/* Buttons */
-.primary, button.primary {
+/* Buttons — triple-specificity to beat Gradio theme */
+button, .gradio-container button, .gradio-container .block button {
+    color: #e0e0e8 !important;
+    -webkit-text-fill-color: #e0e0e8 !important;
+}
+button.primary, .gradio-container button.primary,
+button[class*="primary"], .gradio-container button[class*="primary"] {
     background: linear-gradient(135deg, #7c3aed, #2563eb) !important;
     border: none !important;
     font-weight: 700 !important;
@@ -96,16 +134,20 @@ CUSTOM_CSS = """
     transition: all 0.3s !important;
     box-shadow: 0 4px 15px #7c3aed44 !important;
     color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
 }
-.primary:hover, button.primary:hover {
+button.primary:hover, .gradio-container button.primary:hover {
     box-shadow: 0 6px 25px #7c3aed66 !important;
     transform: translateY(-1px) !important;
     color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
 }
-.secondary, button.secondary {
+button.secondary, .gradio-container button.secondary,
+button[class*="secondary"], .gradio-container button[class*="secondary"] {
     background: #1e1e2e !important;
     border: 1px solid #7c3aed44 !important;
     color: #e0e0e8 !important;
+    -webkit-text-fill-color: #e0e0e8 !important;
     border-radius: 8px !important;
 }
 
@@ -125,10 +167,12 @@ textarea::placeholder, input::placeholder {
     color: #6a6a8a !important;
 }
 
-/* Dropdowns */
-select, .wrap option, [data-testid="dropdown"] {
+/* Dropdowns — target native + Svelte-rendered */
+select, .wrap option, [data-testid="dropdown"],
+.gradio-container select {
     background: #1e1e2e !important;
     color: #e0e0e8 !important;
+    -webkit-text-fill-color: #e0e0e8 !important;
 }
 
 /* Radio / Checkbox labels */
@@ -213,47 +257,52 @@ label, label span {
     color: #c0c0d8 !important;
 }
 
-/* Dropdown fix - force dark bg on all dropdown internals */
-.gradio-dropdown .wrap,
-.gradio-dropdown .wrap-inner,
-.gradio-dropdown .secondary-wrap,
-.gradio-dropdown .single-select,
-.gradio-dropdown input,
-.gradio-dropdown .options,
-.gradio-dropdown ul,
-.gradio-dropdown li,
-.gradio-dropdown .token,
+/* Dropdown fix — Gradio 6 Svelte components + attribute selectors */
+/* Dropdown wrapper, input, and inner elements */
+.wrap, .wrap-inner, .secondary-wrap, .icon-wrap,
+.gradio-container .wrap,
+.gradio-container .wrap-inner,
+.gradio-container .secondary-wrap,
+.gradio-container input[role="listbox"],
+.gradio-container input[aria-expanded],
 [data-testid="dropdown"],
 [data-testid="dropdown"] .wrap,
 [data-testid="dropdown"] input,
-[data-testid="dropdown"] .single-select,
-.svelte-dropdown,
 div[role="listbox"],
-div[role="option"] {
+input[role="listbox"] {
     background: #1e1e2e !important;
     background-color: #1e1e2e !important;
     color: #e0e0e8 !important;
+    -webkit-text-fill-color: #e0e0e8 !important;
+    border-color: #2a2a3e !important;
 }
-.gradio-dropdown ul.options,
-div[role="listbox"] {
+/* Dropdown options popup */
+ul.options, ul[role="listbox"],
+.gradio-container ul.options,
+.gradio-container ul[role="listbox"] {
     background: #16161f !important;
+    background-color: #16161f !important;
     border: 1px solid #2a2a3e !important;
 }
-.gradio-dropdown ul.options li:hover,
-.gradio-dropdown ul.options li.active,
-.gradio-dropdown ul.options li.selected,
-div[role="option"]:hover,
-div[role="option"][aria-selected="true"] {
+/* Dropdown option items */
+li.item, li[role="option"], li[data-testid="dropdown-option"],
+.gradio-container li.item,
+.gradio-container li[role="option"] {
+    background: #16161f !important;
+    color: #e0e0e8 !important;
+    -webkit-text-fill-color: #e0e0e8 !important;
+}
+li.item:hover, li.item.active, li[role="option"]:hover,
+li[role="option"][aria-selected="true"],
+li[data-testid="dropdown-option"]:hover {
     background: #7c3aed !important;
     color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
 }
-
-/* Force all buttons to have visible text */
-button {
-    color: #e0e0e8 !important;
-}
-button.primary, .primary button {
-    color: #ffffff !important;
+/* Dropdown arrow SVG */
+.dropdown-arrow, .icon-wrap svg {
+    color: #b0b0c8 !important;
+    fill: #b0b0c8 !important;
 }
 """
 
